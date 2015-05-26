@@ -1,0 +1,61 @@
+{
+  "name": "generator-ionic",
+  "version": "0.7.3",
+  "description": "A generator for the Ionic Framework & Parse.com",
+  "keywords": [
+    "yeoman-generator",
+    "ionic",
+    "framework",
+    "ionicframework",
+    "angularjs",
+    "hybrid",
+    "mobile",
+    "app",
+    "parse"
+  ],
+  "author": {
+    "name": "MARY Thomas",
+    "email": "thomas@viceversa.io",
+    "url": "https://github.com/thomasMary"
+  },
+  "main": "app/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/thomasMary/generator-ionicparse.git"
+  },
+  "scripts": {
+    "test": "mocha --timeout 5000"
+  },
+  "dependencies": {
+    "chalk": "^0.5.1",
+    "cordova": "^4.2.0",
+    "lodash": "^3.1.0",
+    "mout": "^0.11.0",
+    "npm-name": "^1.0.3",
+    "superb": "^1.1.2",
+    "yeoman-generator": "^0.18.7",
+    "yosay": "^1.0.2"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-conventional-changelog": "^1.1.0",
+    "grunt-release": "^0.11.0",
+    "load-grunt-tasks": "^3.1.0",
+    "marked": "^0.3.3",
+    "mocha": "^2.1.0",
+    "mockery": "^1.4.0",
+    "semver": "^4.2.0"
+  },
+  "peerDependencies": {
+    "yo": ">=1.0.0"
+  },
+  "engines": {
+    "node": ">=0.10.0",
+    "npm": ">=1.2.10"
+  },
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ]
+}
