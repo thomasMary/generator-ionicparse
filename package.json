@@ -1,6 +1,6 @@
 {
-  "name": "generator-ionic",
-  "version": "0.7.3",
+  "name": "generator-ionicparse",
+  "version": "0.0.7",
   "description": "A generator for the Ionic Framework & Parse.com",
   "keywords": [
     "yeoman-generator",
@@ -30,6 +30,7 @@
     "chalk": "^0.5.1",
     "cordova": "^4.2.0",
     "lodash": "^3.1.0",
+    "mkdirp": "^0.5.1",
     "mout": "^0.11.0",
     "npm-name": "^1.0.3",
     "superb": "^1.1.2",

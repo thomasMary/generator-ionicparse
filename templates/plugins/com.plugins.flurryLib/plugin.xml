@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="com.viceversa.flurryLib"
+        version="0.1.0">
+    <name>flurryLib</name>
+    <description>Add Flurry.jar to lib folder</description>
+    <author>MARY Thomas</author>
+    <license>Apache 2.0</license>
+    <keywords></keywords>
+
+    <preference name="FLURRY_ID" />
+
+    <platform name="android">
+
+        <source-file src="src/android/res/values/viceversa-flurry.xml" target-dir="res/values" />
+        <config-file target="res/values/viceversa-flurry.xml" parent="/*">
+            <string name="flurry_id">$FLURRY_ID</string>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data android:name="com.viceversa.flurryLib.FlurryId" android:value="@string/flurry_id"/>
+            <activity android:name="com.viceversa.flurryLib.FlurrySessionActivity"/>
+        </config-file>
+
+        <source-file src="src/android/src/FlurrySessionActivity.java" target-dir="src/com/viceversa/flurryLib/" />
+        <source-file src="lib/android/FlurryAnalytics-5.1.0.jar" target-dir="libs/" />
+    </platform>
+   
+
+
+</plugin>
+	

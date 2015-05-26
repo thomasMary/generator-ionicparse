@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="com.viceversa.parsePushNotifications"
+        version="0.1.0">
+    <name>ParsePushNotifications</name>
+    <description>Cordova Parse Push Notification Plugin</description>
+    <author>MARY Thomas</author>
+    <license>Apache 2.0</license>
+    <keywords>cordova,parse,push</keywords>
+
+    <preference name="APP_ID" />
+    <preference name="CLIENT_ID" />
+
+    <js-module src="www/parsePushNotifications.js" name="ParsePushNotifications">
+        <clobbers target="plugin.parse_push" />
+    </js-module>
+	
+    <platform name="android">
+
+    	<source-file src="src/android/res/values/viceversa.xml" target-dir="res/values" />
+        <config-file target="res/values/viceversa.xml" parent="/*">
+            <string name="app_id">$APP_ID</string>
+            <string name="client_id">$CLIENT_ID</string>
+        </config-file>
+
+        <config-file target="config.xml" parent="/*">
+			<feature name="ParsePushNotificationPlugin">
+				<param name="android-package" value="com.viceversa.parsePushNotifications.ParsePushNotificationPlugin" />
+			</feature>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+		    
+			<permission android:protectionLevel="signature" android:name="$PACKAGE_NAME.permission.C2D_MESSAGE" />
+			<uses-permission android:name="$PACKAGE_NAME.permission.C2D_MESSAGE" />
+			
+			<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+			<uses-permission android:name="android.permission.INTERNET" />
+			<uses-permission android:name="android.permission.WAKE_LOCK" />
+			<uses-permission android:name="android.permission.VIBRATE" />
+			<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+			<uses-permission android:name="android.permission.GET_ACCOUNTS" />
+			<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />		    
+			
+		</config-file>
+		
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+        	<meta-data android:name="com.viceversa.ParsePushNotificationPlugin.AppID" android:value="@string/app_id"/>
+        	<meta-data android:name="com.facebook.ParsePushNotificationPlugin.ClientID" android:value="@string/client_id"/>
+
+		    <activity android:name="com.viceversa.parsePushNotifications.PushHandlerActivity"/>
+
+		    <service android:name="com.viceversa.parsePushNotifications.GCMIntentService"/>
+		    <service android:name="com.parse.PushService" />
+
+		    <receiver android:name="com.parse.ParseBroadcastReceiver">
+		    	<intent-filter>
+		    			<action android:name="android.intent.action.BOOT_COMPLETED" />
+						<action android:name="android.intent.action.USER_PRESENT" />
+				</intent-filter>
+		    </receiver>
+
+
+			<receiver android:name="com.viceversa.parsePushNotifications.GCMReceiver">
+		    	<intent-filter>
+		        	<action android:name="com.google.android.c2dm.intent.RECEIVE" />
+		            <category android:name="$PACKAGE_NAME" />
+				</intent-filter>
+			</receiver>
+
+		    <receiver android:name="com.parse.GcmBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND">
+				<intent-filter >
+		        	<action android:name="com.google.android.c2dm.intent.RECEIVE" />
+		            <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+		            <category android:name="$PACKAGE_NAME" />
+				</intent-filter>
+			</receiver>		    
+			
+		</config-file>
+
+		<source-file src="src/android/src/GCMIntentService.java" target-dir="src/com/viceversa/parsePushNotifications/" />
+		<source-file src="src/android/src/GCMReceiver.java" target-dir="src/com/viceversa/parsePushNotifications/" />
+		<source-file src="src/android/src/ParsePushNotificationPlugin.java" target-dir="src/com/viceversa/parsePushNotifications/" />
+		<source-file src="src/android/src/PushHandlerActivity.java" target-dir="src/com/viceversa/parsePushNotifications/" />
+		<source-file src="src/android/src/ParseApplication.java" target-dir="src/com/viceversa/parsePushNotifications/" />
+		<source-file src="src/android/lib/android/gcm.jar" target-dir="libs/" framework="true" />					 
+		<source-file src="src/android/lib/parse/Parse-1.8.2.jar" target-dir="libs/" framework="true" />		
+  		<source-file src="src/android/lib/parse/ParseCrashReporting-1.8.2.jar" target-dir="libs/" framework="true" />			
+ 	
+<!-- 		<source-file src="src/android/lib/parse/Parse-1.4.1.jar" target-dir="libs/" framework="true" />			
+ -->    </platform>
+
+   
+</plugin>
+	
