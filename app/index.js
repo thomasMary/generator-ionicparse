@@ -20,120 +20,22 @@ module.exports = generators.Base.extend({
     this.argument('appName', { type: String, required: false });
     this.option('appName', { type: String, required: false });
     this.option('appId', { type: String, required: false });
-    this.option('compass', { type: Boolean, required: false });
-    this.option('starter', { type: String, required: false });
-    this.option('templates', { type: Array, required: false });
-    this.option('plugins', { type: Object, required: false });
-    this.option('auth', { type: Object, required: false });
-    this.option('flurry', { type: Object, required: false });
-    this.option('push', { type: Object, required: false });
     this.options.selected = {};
     this.lplugins = [];
+    this.scriptsFile = [];
   },
 
   prompting: {
-    askForCompass: function askForCompass() {
-      var done = this.async();
-
-      this.prompt([{
-        type: 'confirm',
-        name: 'compass',
-        message: 'Would you like to use Sass with Compass (requires Ruby)?',
-        default: (typeof(this.options.compass) !== 'undefined') ? this.options.compass : false
-      }], function (props) {
-        this.compass = this.options.selected.compass = props.compass;
-
-        done();
-      }.bind(this));
-    },
-    askForAnalytics: function askForAnalytics() {
-      var done = this.async();
-
-      this.prompt([{
-        type: 'confirm',
-        name: 'flurry',
-        message: 'Would you like to use Flurry Analytics?',
-        default: (typeof(this.options.flurry) !== 'undefined') ? this.options.flurry : false
-      }], function (props) {
-        this.flurry = this.options.selected.flurry = props.flurry;
-
-        done();
-      }.bind(this));
-    },
-    askForPush: function askForPush() {
-      var done = this.async();
-
-      this.prompt([{
-        type: 'confirm',
-        name: 'push',
-        message: 'Would you like to use Parse push notification?',
-        default: (typeof(this.options.push) !== 'undefined') ? this.options.push : false
-      }], function (props) {
-        this.push = this.options.selected.push = props.push;
-
-        done();
-      }.bind(this));
-    },
-    askForPlugins: function askForPlugins() {
-      var done = this.async();
-
-      if (this.options.plugins) {
-        ionicUtils.mergePlugins(this.options.plugins);
-      }
-
-      this.prompt(ionicUtils.plugins.prompts, function (props) {
-        this.plugins = this.options.selected.plugins = props.plugins;
-
-        done();
-      }.bind(this));
-    },
-    askForAuthentificationProvider: function askForAuthentificationProvider() {
-      var done = this.async();
-      console.log('!!!!!!!!!');
-      console.log(this.options.auth);
-      if (this.options.auth) {
-        console.log('!!!!!!!!!');
-        ionicUtils.mergePlugins(this.options.auth);
-      }
-      console.log(this.options.auth);
-
-      this.prompt(ionicUtils.auth.prompts, function (props) {
-        this.auth = this.options.selected.auth = props.auth;
-        console.log(this.auth);
-        done();
-      }.bind(this));
-    },
-    askForStarter: function askForStarter() {
-      var done = this.async();
-
-      if (this.options.templates) {
-        ionicUtils.mergeStarterTemplates(this.options.templates);
-      }
-
-      var defaultIndex = 0;
-      if (this.options.starter) {
-        defaultIndex = _.findIndex(ionicUtils.starters.templates, { name: this.options.starter });
-
-        if (defaultIndex === -1) {
-          defaultIndex = 0;
-          this.log(chalk.bgYellow(chalk.black('WARN')) +
-            chalk.magenta(' Unable to locate the requested default template: ') +
-            this.options.starter);
-        }
-      }
-
-      this.prompt([{
-        type: 'list',
-        name: 'starter',
-        message: 'Which starter template would you like to use?',
-        choices: _.pluck(ionicUtils.starters.templates, 'name'),
-        default: defaultIndex
-      }], function (props) {
-        this.starter = this.options.selected.starter = _.find(ionicUtils.starters.templates, { name: props.starter });
-        done();
-      }.bind(this));
-    }
-
+    askForCompass: function() { ionicUtils.compass.ask(this); },
+    askForRoutes: function() { ionicUtils.routes.ask(this); },
+    askForModels: function() { ionicUtils.models.ask(this); },
+    askForAuthProvider: function() { ionicUtils.auth.ask(this); },
+    askForAnalytics: function() { ionicUtils.analytics.ask(this); },
+    askForPush: function() { ionicUtils.push.ask(this); },
+    askForPlugins: function() { ionicUtils.plugins.ask(this); },
+    askForImageService: function() { ionicUtils.images.ask(this); },
+    askForGrunt: function() { ionicUtils.grunt.ask(this); },
+    askForStarter: function() { ionicUtils.grunt.ask(this); }
   },
 
   configuring: {
@@ -142,6 +44,12 @@ module.exports = generators.Base.extend({
       this.appName = mout.string.pascalCase(this.appName);
       this.appId = this.options.appId || 'com.example.' + this.appName;
       this.appPath = 'app';
+      this.jsPath = this.appPath+'/js';
+      this.ctrlPath = this.jsPath + '/controllers/';
+      this.servicesPath = this.jsPath + '/services/';
+      this.modelsPath = this.servicesPath + 'models/';
+      this.directivesPath = this.jsPath + '/directives/';
+      this.viewPath = 'templates/';
       this.root = process.cwd() + '/' + this.appName;
 
       this.pkg = JSON.parse(this.readFileAsString(path.join(__dirname, '../package.json')));
@@ -161,13 +69,20 @@ module.exports = generators.Base.extend({
       // directory into your users new application path
       this.sourceRoot(path.join(__dirname, '../templates/'));
       this.directory('common/root', '.', true);
+      // create module.js
+      var moduleFile = this.readFileAsString(path.join(__dirname, '../templates/scripts/module.js'))
+      moduleFile = moduleFile.replace(new RegExp("{{APP_NAME}}", 'g'), this.appName);
+      var moduleFilePath = this.jsPath + '/modules.js'
+      this.write(moduleFilePath, moduleFile);
+      this.scriptsFile.push(moduleFilePath);
     },
 
     packageFiles: function packageFiles() {
       this.template('common/_bower.json', 'bower.json');
       this.template('common/_bowerrc', '.bowerrc');
       this.template('common/_package.json', 'package.json');
-      this.copy('common/_Gruntfile.js', 'Gruntfile.js');
+      if (this.grunt)
+        this.copy('common/_Gruntfile.js', 'Gruntfile.js');
       this.template('common/_gitignore', '.gitignore');
     }
   },
@@ -185,134 +100,35 @@ module.exports = generators.Base.extend({
         done();
       }.bind(this));
     },
-    installAuthProvider: function installAuthProvider() {
-      if (this.auth) {
-        var done = this.async();
-        var self = this;
-        console.log(this.auth);
-        done();
-      } else {
-        console.log('NO AUTH');
-      }
-    },
-    installPush: function installPush() {
-      if (this.push) {
-        var self = this;
-        var done = this.async();
-        self.prompt({
-          type    : 'input',
-          name    : 'APP_ID',
-          message : 'What\'s your Parse APP_ID',
-          store   : true
-        }, function(app_id) {
-          console.log(app_id);
-          self.prompt({
-            type    : 'input',
-            name    : 'CLIENT_ID',
-            message : 'What\'s your Parse CLIENT_ID',
-            store   : true
-          }, function(client_id) {
-            console.log(client_id);
-            self.directory('../templates/plugins/com.plugins.parsePushNotifications', 'local_plugins/com.plugins.parsePushNotifications');
-            self.lplugins.push('local_plugins/com.plugins.parsePushNotifications --variable APP_ID=' + app_id + ' --variable CLIENT_ID=' + client_id);
-            done();
-          });
-        });
-        
-      }
-    },
-    installFlurry: function installFlurry() {
-      if (this.flurry) {
-        var done = this.async();
-        var self = this;
-        self.prompt({
-            type    : 'input',
-            name    : 'FLURRY_ID',
-            message : 'What\'s your Flurry APP_ID',
-            store   : true
-          }, function(flurry_id) {
-            console.log(flurry_id);
-            self.directory('../templates/plugins/com.plugins.flurryLib', 'local_plugins/com.plugins.flurryLib');
-            self.lplugins.push('local_plugins/com.plugins.flurryLib' + ' --variable APP_ID=' + flurry_id );
-            done();
-          });
-        
-      }
-    },
-    installPlugins: function installPlugins() {
-      console.log(chalk.yellow('\nInstall plugins registered at plugins.cordova.io: ') + chalk.green('grunt plugin:add:org.apache.cordova.globalization'));
-      console.log(chalk.yellow('Or install plugins direct from source: ') + chalk.green('grunt plugin:add:https://github.com/apache/cordova-plugin-console.git\n'));
-      if (this.plugins.length > 0) {
-        console.log(chalk.yellow('Installing selected Cordova plugins, please wait.'));
-        
-        // Turns out plugin() doesn't accept a callback so we try/catch instead
-        try {
-          cordova.plugin('add', this.plugins);
-        } catch (e) {
-          console.log(e);
-          this.log.error(chalk.red('Please run `yo ionic` in an empty directory, or in that of an already existing cordova project.'));
-          process.exit(1);
-        }
-      }
-      if (this.lplugins.length > 0) {
-        for (var i = this.lplugins.length - 1; i >= 0; i--) {
-          var plugin = this.lplugins[i];
-        };
-      }
-    },
-
-    installStarter: function installStarter() {
-      console.log(chalk.yellow('Installing starter template. Please wait'));
-      var done = this.async();
-
-      var callback = function (error, remote) {
-        if (error) {
-          done(error);
-        }
-
-        // Template remote initialization: Copy from remote root folder (.) to working directory (/app)
-        remote.directory('.', 'app');
- 
-        this.starterCache = remote.cachePath;
-        done();
-      }.bind(this);
-
-      if (this.starter && this.starter.path) {
-        this.log(chalk.bgYellow(chalk.black('WARN')) +
-          chalk.magenta(' Getting the template from a local path.  This should only be used for developing new templates.'));
-        this.remoteDir(this.starter.path, callback);
-      } else if (this.starter.url) {
-        this.remote(this.starter.url, callback, true);
-      } else {
-        this.remote(this.starter.user, this.starter.repo, 'master', callback, true);
-      }
-    },
+    installModels: function installModels() { ionicUtils.models.install(this); },
+    installRoutes: function installRoutes() { ionicUtils.routes.install(this); },
+    installAuthProvider: function installAuthProvider() { ionicUtils.auth.install(this); },
+    installPush: function installPush() { ionicUtils.push.install(this); },
+    installFlurry: function installFlurry() { ionicUtils.analytics.install(this); },
+    installPlugins: function installPlugins()  { ionicUtils.plugins.install(this); },
+    installImageService: function installImageService()  { ionicUtils.images.install(this); },
+    installGrunt: function installAuthProvider() { ionicUtils.grunt.install(this); },
+    installConstants: function installConstants() { ionicUtils.constants.install(this); }, 
+    installStarter: function installStarter() { ionicUtils.starter.install(this); },
 
     readIndex: function readIndex() {
       this.indexFile = this.engine(this.read(path.join(this.starterCache, 'index.html')), this);
     },
 
     appJs: function appJs() {
-     
       var scriptPrefix = 'js' + path.sep;
-
       var scripts = [scriptPrefix + 'configuration.js'];
-      
       this.fs.store.each(function (file, index) {
-        if (file.path.indexOf('.js') !== -1)
-        {
+        if (file.path.indexOf('.js') !== -1) {
           var relPath = path.relative(appPath, file.path);
           if (relPath.indexOf(scriptPrefix) === 0) {
             scripts.push(relPath);
           }
         }
       });
-
-      //this.indexFile = this.appendScripts(this.indexFile, 'scripts/scripts.js', scripts);
     },
 
-    createIndexHtml: function createIndexHtml() {
-             
+    createIndexHtml: function createIndexHtml() {             
         // Regex: Vendor CSS
         this.indexFile = this.indexFile.replace(/<link href="lib\/ionic\/css\/ionic.css" rel="stylesheet">/g, "<!-- build:css styles\/vendor.css -->\n    <!-- bower:css -->\n    <!-- endbower -->\n    <!-- endbuild -->");
         
@@ -323,15 +139,20 @@ module.exports = generators.Base.extend({
         this.indexFile = this.indexFile.replace(/<script src="lib\/ionic\/js\/ionic.bundle.js"><\/script>/g, "<!-- build:js scripts\/vendor.js -->\n    <!-- bower:js -->\n    <!-- endbower -->\n    <!-- endbuild -->");
       
        // Regex: User scripts (scripts.js)
+       var scripts = '';
+       for (var i = this.scriptsFile.length - 1; i >= 0; i--) {
+         scripts += "\t<script src=\"" + this.scriptsFile[i] + "\"><\/script>\n";
+       };
        this.indexFile = this.indexFile.replace(/<!-- your app's js -->/g,"<!-- your app's js -->\n    <!-- build:js scripts\/scripts.js -->");
-       this.indexFile = this.indexFile.replace(/<\/head>/g,"  <script src=\"scripts\/configuration.js\"><\/script>\n    <!-- endbuild -->\n  <\/head>");
-       
-       // Regex/Rename: Scripts path (Ionics 'js' to 'scripts')
-       this.indexFile = this.indexFile.replace(/href="css/g,"href=\"styles");
+       this.indexFile = this.indexFile.replace(/<\/head>/g, scripts + "    <!-- endbuild -->\n  <\/head>");
        
        // Regex/Rename: CSS path (Ionics 'css' to 'styles')
-       this.indexFile = this.indexFile.replace(/src="js/g,"src=\"scripts");
-     
+       this.indexFile = this.indexFile.replace(/href="css/g,"href=\"styles");
+       
+       // Regex/Rename: Scripts path (Ionics 'js' to 'scripts')
+       this.indexFile = this.indexFile.replace(new RegExp("src=\"js", 'g'), "src=\"scripts");
+       this.indexFile = this.indexFile.replace(new RegExp("src=\"app/js", 'g'), "src=\"scripts");
+
        // Write index.html
        this.indexFile = this.indexFile.replace(/&apos;/g, "'");
        this.write(path.join(this.appPath, 'index.html'), this.indexFile);
@@ -368,6 +189,7 @@ module.exports = generators.Base.extend({
     },
 
     cordovaHooks: function cordovaHooks() {
+      // copy hooks directory
       this.directory('hooks', 'hooks', true);
     },
 
@@ -386,12 +208,10 @@ module.exports = generators.Base.extend({
       fs.rename(path.join(appPath, 'css'), path.join(appPath, 'styles'), function(err) {
           if ( err ) console.log('ERROR: ' + err);
       });
-      
       // Rename: CSS path (Ionics 'css' to 'styles')
       fs.rename(path.join(appPath, 'js'), path.join(appPath, 'scripts'), function(err) {
           if ( err ) console.log('ERROR: ' + err);
-      });
-      
+      });     
       // Rename: Images path (Ionics 'img' to 'images')
       fs.rename(path.join(appPath, 'img'), path.join(appPath, 'images'), function(err) {
           if ( err ) console.log('ERROR: ' + err);

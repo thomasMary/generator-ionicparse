@@ -17,3 +17,6 @@ packageJSON.cordovaPlugins.forEach(function (plugin) {
     sys.puts(stdout);
   });
 });
+
+exec('grunt reinstallPlugins:development --force'); // --force cuz uninstall plugin might fail if a plugin hasn't been installed.
+

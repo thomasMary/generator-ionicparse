@@ -10,13 +10,11 @@ module.exports = function (grunt) {
 
   // Load grunt tasks automatically
   require('load-grunt-tasks')(grunt);
-
-  // Time how long tasks take. Can help when optimizing build times
   require('time-grunt')(grunt);
+  grunt.loadNpmTasks('grunt-fixmyjs');
+  grunt.registerTask('default', ['shell']);
 
-  // Define the configuration for all the tasks
   grunt.initConfig({
-
     // Project settings
     yeoman: {
       // configurable paths
@@ -28,34 +26,62 @@ module.exports = function (grunt) {
       dist: 'www'
     },
 
-    // Environment Variables for Angular App
-    // This creates an Angular Module that can be injected via ENV
-    // Add any desired constants to the ENV objects below.
-    // https://github.com/diegonetto/generator-ionic/blob/master/docs/FAQ.md#how-do-i-add-constants
-    ngconstant: {
-      options: {
-        space: '  ',
-        wrap: '"use strict";\n\n {%= __ngModule %}',
-        name: 'config',
-        dest: '<%%= yeoman.app %>/<%%= yeoman.scripts %>/configuration.js'
-      },
-      development: {
-        constants: {
-          ENV: {
-            name: 'development',
-            apiEndpoint: 'http://dev.yoursite.com:10000/'
+    // add constant keys for development & production version
+      ngconstant: {
+        // Options for all targets
+        options: {
+          space: '  ',
+          wrap: '"use strict";\n\n {%= __ngModule %}',
+          name: '{{APP_NAME}}.env',
+        },
+        // Environment targets
+        development: {
+          options: {
+            dest: '<%= yeoman.app %>/scripts/config-constant.js'
+          },
+          constants: {
+            ENV: {
+              name: 'development',
+              PARSEAPPID: '{{PARSE_APP_DEV_ID}}',
+              PARSERESTID: '{{PARSE_REST_DEV_ID}}'
+            }
+          }
+        },
+        production: {
+          options: {
+            dest: '<%= yeoman.app %>/scripts/config-constant.js'
+          },
+          constants: {
+            ENV: {
+              name: 'production',
+              PARSEAPPID: '{{PARSE_APP_PROD_ID}}',
+              PARSERESTID: '{{PARSE_REST_PROD_ID}}'
+            }
           }
         }
       },
-      production: {
-        constants: {
-          ENV: {
-            name: 'production',
-            apiEndpoint: 'http://api.yoursite.com/'
+      // Shell
+      shell: {
+        zipalign: {
+          command: [
+            'cd platforms/android/build/outputs/apk/',
+            'zipalign -v 4 android-armv7-release-unsigned.apk {{APP_NAME}}.apk',
+            'cd ../../../../..'
+          ].join('&&')
+        },
+        jarsigner: {
+          command: [
+            'cd platforms/android/build/outputs/apk/',
+            'jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore {{APP_NAME}}.keystore android-armv7-release-unsigned.apk {{APP_NAME}}',
+            'cd ../../../../..'
+          ].join('&&'), options: {
+            stderr: true,
+            stdin: true,
           }
-        }
-      }
-    },
+        }, buildRelease : {
+          command: 'ionic build --release android'
+        }           
+      },
 
     // Watches files for changes and runs tasks based on the changed files
     watch: {
@@ -105,7 +131,17 @@ module.exports = function (grunt) {
         }
       }
     },
-
+    fixmyjs: {
+      options: {
+        jshintrc: '.jshintrc',
+        indentpref: 'spaces'
+      },
+      all: {
+        files: [
+          {expand: true, cwd: '<%= yeoman.app %>/<%= yeoman.scripts %>', src: ['**/*.js'], dest: '<%= yeoman.app %>/<%= yeoman.scripts %>', ext: '.js'}
+        ]
+      }
+    },
     // Make sure code styles are up to par and there are no obvious mistakes
     jshint: {
       options: {
@@ -526,6 +562,8 @@ module.exports = function (grunt) {
     return grunt.task.run(['init', 'ionic:build:' + this.args.join()]);
   });
 
+  grunt.registerTask()
+
   grunt.registerTask('init', [
     'clean',
     'ngconstant:development',
@@ -536,22 +574,82 @@ module.exports = function (grunt) {
     'newer:copy:tmp'
   ]);
 
+  grunt.registerTask('compress', function() {
+    return grunt.task.run([
+      'clean',
+      'ngconstant:' + this.args.join(), // development or production
+      'wiredep',
+      'useminPrepare',
+      'concurrent:dist',
+      'autoprefixer',
+      'concat',
+      'ngAnnotate',
+      'copy:dist',
+      'cssmin',
+      'uglify',
+      'usemin',
+      'htmlmin'
+      ]);
+  });
 
-  grunt.registerTask('compress', [
-    'clean',
-    'ngconstant:production',
-    'wiredep',
-    'useminPrepare',
-    'concurrent:dist',
-    'autoprefixer',
-    'concat',
-    'ngAnnotate',
-    'copy:dist',
-    'cssmin',
-    'uglify',
-    'usemin',
-    'htmlmin'
+  grunt.registerTask('releaseStoreApk', [
+    'reinstallPlugins:production',
+    'compress:production',
+    'shell:buildRelease',
+    'shell:jarsigner',
+    'shell:zipalign'
   ]);
+
+  /* Those task are use to install/remove/reinstall plugin which rely on --variables */
+  grunt.registerTask('installPluginsWithVariable', function() {
+    var base = this.args[0];
+    var plugin = this.args[1];
+    var variables = this.args[2];
+    if (base) {
+      plugin = 'https://' + plugin;
+    }
+    var done = this.async();
+    var exec = require('child_process').exec;
+    var child = exec('cordova plugin add ' + plugin + " " + variables);
+
+    child.stdout.on('data', function (data) {
+      grunt.log.writeln(data);
+    });
+    child.stderr.on('data', function (data) {
+      grunt.log.error(data);
+    });
+    child.on('close', function (code) {
+      code = code ? false : true;
+      done(code);
+    });
+  });
+  grunt.registerTask('removePlugin', function() {
+    return grunt.task.run(['plugin:remove:'+this.args.join()]);
+  });
+  grunt.registerTask('installPlugins', function() {
+    if (this.args.join().indexOf('production') != -1) {
+      return grunt.task.run([
+        {{PLUGINS_PROD}}
+      ];
+    } else {
+      return grunt.task.run([
+        {{PLUGINS_DEV}}
+      ];
+    }
+  });
+  grunt.registerTask('reinstallPlugins', function() {
+    if (this.args.join().indexOf('production') != -1) {
+      return grunt.task.run([
+        {{REMOVE_PLUGINS}}
+        'installPlugins:production'
+      ];
+    } else {
+      return grunt.task.run([
+        {{REMOVE_PLUGINS}}
+        'installPlugins:production'
+      ];
+    }
+  });
 
   grunt.registerTask('coverage', 
     ['karma:continuous',
